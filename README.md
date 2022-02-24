@@ -107,3 +107,17 @@ Introduction
     21.7. G - How Rust is Made and “Nightly Rust”
 
 ```
+
+# Rust Mac install error
+- error
+```shell
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs --no-modify-path | sh
+
+# output
+error: could not amend shell profile: '/Users/xxxx/.bashrc': could not write rcfile file: '/Users/xxxx/.bashrc': Permission denied (os error 13)
+```
+
+- Solution
+```shell
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y --no-modify-path
+```
