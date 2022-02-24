@@ -1,5 +1,7 @@
 # Notes
 - https://doc.rust-lang.org/book/title-page.html
+- https://rustwiki.org/docs/
+- https://github.com/rust-lang-cn
 ```
 The Rust Programming Language
 Foreword
