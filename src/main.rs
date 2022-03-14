@@ -1,3 +1,4 @@
+use std::io;
 fn main() {
   
   {
@@ -225,8 +226,68 @@ fn main() {
    * 我们将数组的值写成在方括号内，用逗号分隔：
    */
   {
+    let list = [1, 2, 3, 4, 5];
+    println!("list: {}", list[2]); // 访问数组 list: 3
+  }
+  {
+    let months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    println!("months: {}", months[1]); // months: February
 
+
+    // 使用方括号编写数组的类型，其中包含每个元素的类型、分号，然后是数组中的元素数，如下所示：
+    /*
+     * 这里，i32 是每个元素的类型。分号之后，数字 5 表明该数组包含 5 个元素。
+     */
+    let _alist: [i32; 5] = [1, 2, 3, 4, 5];
+    println!("_alist: {}",_alist[0]); // _alist: 1
+
+    /*
+     * 以这种方式编写数组的类型看起来类似于初始化数组的另一种语法：
+     * 如果要为每个元素创建包含相同值的数组，可以指定初始值，后跟分号，
+     * 然后在方括号中指定数组的长度，如下所示： 
+     * 
+     * 对于每个元素都相同的情况，还可以通过指定初始值、后跟分号和方括
+     * 号中的数组长度来初始化数组，如下所示：
+     */
+    let blist = [3; 5];
+    println!("blist: {}", blist[0]); // blist: 3
+    // 变量名为 a 的数组将包含 5 个元素，这些元素的值初始化为 3。这种写法与 let a = [3, 3, 3, 3, 3]; 效果相同，但更简洁。
+  
+  }
+  {
+    // 访问数组元素
+    let a = [1, 2, 3, 4, 5];
+    let first = a[0];
+    let second = a[1];
+    println!("first: {}", first);  // first: 1
+    println!("second: {}", second);  // second: 2
   }
 
+  // TODO: 无效的数组元素访问
+  /*
+   * 如果尝试访问超出数组末尾的数组元素，会发生什么？ 假如你将示
+   * 例更改为以下内容，使用类似于第 2 章猜数字游戏的代码那样从用
+   * 户获取数组索引：
+   */
+  {
+
+    let alist = [1, 2, 3, 4, 5];
+    println!("Please enter an array index.");
+    
+    let mut index = String::new();
+
+    io::stdin().read_line(&mut index).expect("Failed to read line");
+
+    let index: usize = index.trim().parse().expect("Index entered was not a number");
+
+    let element = alist[index];
+    println!("The value of the element at index {} is: {}", index, element);
+    // The value of the element at index 3 is: 4
+    /*
+     * 此代码编译成功。如果使用 cargo run 来运行此代码并输入 0、1、2、3 或 4，则程序
+     * 将打印数组对应索引的值。如果输入的是超出数组末尾的数字，例如 10，则会看到类
+     * 似以下的输出：
+     */
+  }
 
 }
