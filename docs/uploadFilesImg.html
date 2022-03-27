@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        ul,li{
+            list-style: none;
+        }
+        #show {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        #show img {
+            width: 200px;
+            height: 200px;
+        }
+        #list li{
+                width: 200px;
+                height: 200px; 
+        }
+        #list li{
+           position: relative;
+           margin-bottom: 15px;
+           cursor: pointer;
+            
+        }
+        #list li img{
+                width: 200px;
+                height: 200px; 
+        }
+        #list li span{
+                position: absolute;
+                z-index: 5;
+                top: 50%;
+                left: 50%;
+                border-radius: 50%;
+                margin-top: -15px;
+                margin-left: -15px;
+                width: 30px;
+                height: 30px;
+                line-height: 30px;
+                display: block;
+                font-size: 14px;
+                background: rgba(0, 0, 0, 0.5);
+                text-align: center;
+                color: #FFF;
+                visibility: hidden;
+        }
+        #list li:hover span{
+            visibility: visible;
+        }
+    </style>
+</head>
+
+<body>
+    <input id="file" type="file" name="upload" multiple onchange="uploadShowFileImgs();">
+    <ul id="list"></ul>
+    </form>
+    <script type="text/javascript">
+        let tempList = [];          // 临时存储数据，也是要提交的数据
+        let fileMap = new Map();    // 要存储数据
+        // 上传多个图片本地预览
+        const uploadShowFileImgs = () => {
+            const files = document.getElementById('file').files;
+            let listElement  = document.getElementById('list');
+            let listImgs = [];
+            let fragment = document.createDocumentFragment();
+
+            for(let i = 0; i < files.length; i++){
+                const li = document.createElement('li');
+                const span = document.createElement('span');
+                const img = new Image();
+
+                span.textContent = `X`;
+               
+                fileMap.set(`img${i}`, [files[i]]);
+                const reader = new FileReader();
+                reader.readAsDataURL(files[i]);
+
+                reader.onload = function (e) {
+                    listImgs = this.result;
+                    img.src = this.result;
+                    li.appendChild(img);
+                    li.appendChild(span);
+                    fragment.appendChild(li);
+                    listElement.appendChild(fragment);
+                }
+            }
+
+            setTimeout(() => {
+                handleRemoveImg(listElement);
+            }, 600);
+
+        }
+
+         // 删除数据的结果方法
+        const handleRemoveImg = (elements) => {
+            let docList = document.querySelectorAll(`#list li`);
+            let docSpan = document.querySelectorAll(`#list li span`);
+            Array.from(docSpan).map((innerEle, index) => {
+                innerEle.index = index;
+                innerEle.onclick = function() {
+                    let parent = this.parentElement;
+                    docList[this.index].parentElement.removeChild(docList[this.index]);
+                    fileMap.delete(`img${this.index}`);
+                    getFilesMap(fileMap);
+                }
+            })
+        }
+
+
+        // 获取数据的结果方法
+        const getFilesMap = (fileMap) => {
+            for (const iterator of fileMap) {
+                const innerItem = iterator[1][0];
+                tempList.push(innerItem);
+                console.log("innerItem: ", innerItem);
+            }
+            console.log("获取结果的数据：", tempList);
+        }
+
+
+    
+        
+    </script>
+</body>
+
+</html>
