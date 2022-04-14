@@ -185,8 +185,234 @@ pub fn notify<T: Summary>(item: &T) {
 
 ```rust
 pub fn notify(item: &impl Summary, item2: &impl summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+```
+- 这与之前的例子相同，不过稍微冗长了一些。trait bound 与泛型参数声明在一起，位于尖括号中的冒号后面。
+
+- impl Trait 很方便，适用于短小的例子。trait bound 则适用于更复杂的场景。例如，可以获取两个实现了 Summary 的参数。使用 impl Trait 的语法看起来像这样：
+
+```rust
+pub fn notify(item1: &lmpl Summary, item2: &impl Summary)
+```
+> 这适用于 item1 和 item2 允许是不同类型的情况（只要它们都实现了 Summary）。不过如果你希望强制它们都是相同类型呢？这只有在使用 trait bound 时才有可能：
+
+```rust
+pub fn notify<T: Summary>(item1: &T, item2: &T) {
+```
+> 泛型 T 被指定为 item1 和 item2 的参数限制，如此传递给参数 item1 和 item2 值的具体类型必须一致。
+
+### 通过 + 指定多个 trait bound
+> 如果 notify 需要显示 item 的格式化形式，同时也要使用 summarize 方法，那么 item 就需要同时实现两个不同的 trait：Display 和 Summary。这可以通过 + 语法实现：
+
+```rust
+pub fn notify(item: &(impl Summary + Display)){
+
+}
+```
+- + 语法也适用于泛型的 trait bound：
+```rust
+pub fn notify<T: sumary + Display>(item: &T) {
+
+}
+```
+- 通过指定这两个 trait bound，notify 的函数体可以调用 summarize 并使用 {} 来格式化 item。
+
+### 通过 where 简化 trait bound
+> 然而，使用过多的 trait bound 也有缺点。每个泛型有其自己的 trait bound，所以有多个泛型参数的函数在名称和参数列表之间会有很长的 trait bound 信息，这使得函数签名难以阅读。为此，Rust 有另一个在函数签名之后的 where 从句中指定 trait bound 的语法。所以除了这么写：
+
+```rust
+fn some_function<T: Display + clone, U: Clone + Debut>(t: &T, u: &U) -> i32 {
     
 }
 ```
+- 还可以像这样使用 where 从句：
+```rust
+fn some_function<T, U>(t: &T, u: &U) -> i32 where T: Display + Clone, U: Clone + Debug {
 
+}
+```
+> 这个函数签名就显得不那么杂乱，函数名、参数列表和返回值类型都离得很近，看起来跟没有那么多 trait bounds 的函数很像。
 
+### 返回实现了 trait 的类型
+- 也可以在返回值中使用 impl Trait 语法，来返回实现了某个 trait 的类型：
+```rust
+fn returns_summarizable() -> impl Sumary {
+    Tweet {
+        username: String::from("horse_ebooks"),
+        content: String::from("of course, as you probably already know, people"),
+        reply: false,
+        retweet: false,
+    }
+}
+```
+> 通过使用 impl Summary 作为返回值类型，我们指定了 returns_summarizable 函数返回某个实现了 Summary trait 的类型，但是不确定其具体的类型。在这个例子中 returns_summarizable 返回了一个 Tweet，不过调用方并不知情。
+
+> 返回一个只是指定了需要实现的 trait 的类型的能力在闭包和迭代器场景十分的有用，第十三章会介绍它们。闭包和迭代器创建只有编译器知道的类型，或者是非常非常长的类型。impl Trait 允许你简单的指定函数返回一个 Iterator 而无需写出实际的冗长的类型。
+
+> 不过这只适用于返回单一类型的情况。例如，这段代码的返回值类型指定为返回 impl Summary，但是返回了 NewsArticle 或 Tweet 就行不通：
+
+```rust
+fn returns_summarizable(switch: bool) -> lmpl Summary {
+    if switch {
+        NewsArticle {
+            handline: String::from("Penguins win the Stanley Cup Championship!"),
+            location: String::from("Pittsburgh, PA, USA"),
+            author: String::from("Iceburgh"),
+            content: String::from( "The Pittsburgh Penguins once again are the best \hockey team in the NHL."),
+            
+        }
+    } else {
+        Tweet {
+            username: String::from("horse_ebooks"),
+            content: String::from("of course, as you probably already know, people"),
+            reply: false,
+            retweet: false,
+        }
+    }
+}
+```
+> 这里尝试返回 NewsArticle 或 Tweet。这不能编译，因为 impl Trait 工作方式的限制。第十七章的 “为使用不同类型的值而设计的 trait 对象” 部分会介绍如何编写这样一个函数。
+
+### 使用 trait bounds 来修复 largest 函数
+> 现在你知道了如何使用泛型参数 trait bound 来指定所需的行为。让我们回到实例 10-5 修复使用泛型类型参数的 largest 函数定义！回顾一下，最后尝试编译代码时出现的错误是：
+```shell
+$ cargo run
+   Compiling chapter10 v0.1.0 (file:///projects/chapter10)
+error[E0369]: binary operation `>` cannot be applied to type `T`
+ --> src/main.rs:5:17
+  |
+5 |         if item > largest {
+  |            ---- ^ ------- T
+  |            |
+  |            T
+  |
+help: consider restricting type parameter `T`
+  |
+1 | fn largest<T: std::cmp::PartialOrd>(list: &[T]) -> T {
+  |             ++++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0369`.
+error: could not compile `chapter10` due to previous error
+```
+
+> 在 largest 函数体中我们想要使用大于运算符（>）比较两个 T 类型的值。这个运算符被定义为标准库中 trait std::cmp::PartialOrd 的一个默认方法。所以需要在 T 的 trait bound 中指定 PartialOrd，这样 largest 函数可以用于任何可以比较大小的类型的 slice。因为 PartialOrd 位于 prelude 中所以并不需要手动将其引入作用域。将 largest 的签名修改为如下：
+
+```rust
+fn largest<T: PartialOrd>(list: &[T]) -> {}
+```
+> 但是如果编译代码的话，会出现一些不同的错误：
+
+```shell
+$ cargo run
+   Compiling chapter10 v0.1.0 (file:///projects/chapter10)
+error[E0508]: cannot move out of type `[T]`, a non-copy slice
+ --> src/main.rs:2:23
+  |
+2 |     let mut largest = list[0];
+  |                       ^^^^^^^
+  |                       |
+  |                       cannot move out of here
+  |                       move occurs because `list[_]` has type `T`, which does not implement the `Copy` trait
+  |                       help: consider borrowing here: `&list[0]`
+
+error[E0507]: cannot move out of a shared reference
+ --> src/main.rs:4:18
+  |
+4 |     for &item in list {
+  |         -----    ^^^^
+  |         ||
+  |         |data moved here
+  |         |move occurs because `item` has type `T`, which does not implement the `Copy` trait
+  |         help: consider removing the `&`: `item`
+
+Some errors have detailed explanations: E0507, E0508.
+For more information about an error, try `rustc --explain E0507`.
+error: could not compile `chapter10` due to 2 previous errors
+```
+
+> 错误的核心是 cannot move out of type [T], a non-copy slice，对于非泛型版本的 largest 函数，我们只尝试了寻找最大的 i32 和 char。正如第四章 “只在栈上的数据：拷贝” 部分讨论过的，像 i32 和 char 这样的类型是已知大小的并可以储存在栈上，所以他们实现了 Copy trait。当我们将 largest 函数改成使用泛型后，现在 list 参数的类型就有可能是没有实现 Copy trait 的。这意味着我们可能不能将 list[0] 的值移动到 largest 变量中，这导致了上面的错误。
+
+> 为了只对实现了 Copy 的类型调用这些代码，可以在 T 的 trait bounds 中增加 Copy！示例 10-15 中展示了一个可以编译的泛型版本的 largest 函数的完整代码，只要传递给 largest 的 slice 值的类型实现了 PartialOrd 和 Copy 这两个 trait，例如 i32 和 char：
+
+- 文件名: src/main.rs
+```rust
+fn largest<T: PartialOrd + Copy>(list: &[T]) -> {
+    let mut largest = list[0];
+
+    for &item in list {
+        if item > largest {
+            largest = item;
+        }
+    }
+
+    largest
+}
+
+fn main() {
+    let number_list = vec![34, 50, 25, 100, 65];
+    
+    let result = largest(&number_list);
+    println!("The largest number is {}", result);
+
+    let char_list = vec!['y', 'm', 'a', 'q'];
+    
+    let result = largest(&char_list);
+    println!("The largest char is {}", result);
+}
+
+```
+> 示例 10-15：一个可以用于任何实现了 PartialOrd 和 Copy trait 的泛型的 largest 函数
+
+> 如果并不希望限制 largest 函数只能用于实现了 Copy trait 的类型，我们可以在 T 的 trait bounds 中指定 Clone 而不是 Copy。并克隆 slice 的每一个值使得 largest 函数拥有其所有权。使用 clone 函数意味着对于类似 String 这样拥有堆上数据的类型，会潜在的分配更多堆上空间，而堆分配在涉及大量数据时可能会相当缓慢。
+
+> 另一种 largest 的实现方式是返回在 slice 中 T 值的引用。如果我们将函数返回值从 T 改为 &T 并改变函数体使其能够返回一个引用，我们将不需要任何 Clone 或 Copy 的 trait bounds 而且也不会有任何的堆分配。尝试自己实现这种替代解决方式吧！如果你无法摆脱与生命周期有关的错误，请继续阅读：接下来的 “生命周期与引用有效性” 部分会详细的说明，不过声明周期对于解决这些挑战来说并不是必须的。
+
+### 使用 trait bound 有条件地实现方法
+
+> 通过使用带有 trait bound 的泛型参数的 impl 块，可以有条件地只为那些实现了特定 trait 的类型实现方法。例如，示例 10-16 中的类型 Pair<T> 总是实现了 new 方法并返回一个 Pair<T> 的实例（回忆一下第五章的 "定义方法" 部分，Self 是一个 impl 块类型的类型别名（type alias），在这里是 Pair<T>）。不过在下一个 impl 块中，只有那些为 T 类型实现了 PartialOrd trait （来允许比较） 和 Display trait （来启用打印）的 Pair<T> 才会实现 cmp_display 方法：
+
+```rust
+use std::fmt::Display;
+
+struct Pair<T> {
+    x: T,
+    y: Y,
+}
+
+impl<T> Pari<T> {
+    fn new(x: T, y: T) -> Self {
+        Self {x, y}
+    }
+}
+
+impl<T: Display + PartialOrd> Pair<T> {
+    fn com_display(&self) {
+        if self.x => self.y {
+            println!("The largest member is x = {}", self.x);
+        } else {
+            println!("The largest member is y = {}", self.y);
+        }
+    }
+}
+
+```
+> 示例 10-16：根据 trait bound 在泛型上有条件的实现方法
+
+> 也可以对任何实现了特定 trait 的类型有条件地实现 trait。对任何满足特定 trait bound 的类型实现 trait 被称为 blanket implementations，他们被广泛的用于 Rust 标准库中。例如，标准库为任何实现了 Display trait 的类型实现了 ToString trait。这个 impl 块看起来像这样：
+
+```rust
+impl<T: Display> ToString for T {
+    // --snip--
+}
+```
+> 因为标准库有了这些 blanket implementation，我们可以对任何实现了 Display trait 的类型调用由 ToString 定义的 to_string 方法。例如，可以将整型转换为对应的 String 值，因为整型实现了 Display：
+
+```rust
+let s = 3.to_string();
+```
+> blanket implementation 会出现在 trait 文档的 “Implementers” 部分。
+
+> trait 和 trait bound 让我们使用泛型类型参数来减少重复，并仍然能够向编译器明确指定泛型类型需要拥有哪些行为。因为我们向编译器提供了 trait bound 信息，它就可以检查代码中所用到的具体类型是否提供了正确的行为。在动态类型语言中，如果我们尝试调用一个类型并没有实现的方法，会在运行时出现错误。Rust 将这些错误移动到了编译时，甚至在代码能够运行之前就强迫我们修复错误。另外，我们也无需编写运行时检查行为的代码，因为在编译时就已经检查过了，这样相比其他那些不愿放弃泛型灵活性的语言有更好的性能。
+
+> 这里还有一种泛型，我们一直在使用它甚至都没有察觉它的存在，这就是 生命周期（lifetimes）。不同于其他泛型帮助我们确保类型拥有期望的行为，生命周期则有助于确保引用在我们需要他们的时候一直有效。让我们学习生命周期是如何做到这些的。
